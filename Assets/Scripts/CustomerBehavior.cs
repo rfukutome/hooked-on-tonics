@@ -24,7 +24,6 @@ public class CustomerBehavior : MonoBehaviour
     void Start()
     {
         customer_manager = GameObject.FindGameObjectWithTag("GM").GetComponent<CustomerManager>();
-        drink_order_panel = customer_manager.GetDrinkPanel();
         ready_sprite = gameObject.GetComponentsInChildren<SpriteRenderer>()[1];
 
         pos_out_of_screen = GameObject.FindGameObjectWithTag("Out of Screen").transform;
@@ -90,6 +89,7 @@ public class CustomerBehavior : MonoBehaviour
         if (ready_to_order)
         {
             customer_manager.SetActiveCustomer(bar_spot_number);
+            drink_order_panel = customer_manager.GetDrinkPanel();
             drink_order_panel.SetActive(true);
         }
     }
