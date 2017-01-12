@@ -5,71 +5,92 @@ using UnityEngine.UI;
 
 public class CustomerBehavior : MonoBehaviour
 {
-    public Transform moveOutOfScreen;
-    public GameObject drinkPanel;
+    
+    
     public float moveSpeed;
-    public SpriteRenderer readySprite;
+    public SpriteRenderer ready_sprite;
 
+    private Transform pos_out_of_screen;
     private CustomerManager customer_manager;
     private bool order_fullfilled;
     private bool ready_to_order;
     private bool waiting_to_order;
-
+    private bool waiting_for_barspot;
+    private GameObject drink_order_panel;
+    [SerializeField]
     private int bar_spot_number;
-    private Transform bar_spot_position;
+    private Vector3 bar_spot_position;
     // Use this for initialization
     void Start()
     {
         customer_manager = GameObject.FindGameObjectWithTag("GM").GetComponent<CustomerManager>();
-        waiting_to_order = true;
+        drink_order_panel = customer_manager.GetDrinkPanel();
+        ready_sprite = gameObject.GetComponentsInChildren<SpriteRenderer>()[1];
+
+        pos_out_of_screen = GameObject.FindGameObjectWithTag("Out of Screen").transform;
+
+        ready_sprite.enabled = false;
+        waiting_for_barspot = true;
+        waiting_to_order = false;
         ready_to_order = false;
         order_fullfilled = false;
-
-        drinkPanel.SetActive(false);
+        bar_spot_number = -1;
     }
 
     // Update is called once per frame
     void Update()
     {
-        //If there is barSpaceOpen, and you haven't ordered, and you are not close enough to order.
-        if (waiting_to_order && !order_fullfilled && !ready_to_order)
+        //If you're waiting for barspace, and you haven't ordered, and you are not close enough to order, look for a barspace
+        if (waiting_for_barspot && !order_fullfilled && !ready_to_order)
         {
-            Vector3 bar_spot = customer_manager.GetBarSpot(ref bar_spot_number);
+            bar_spot_position = customer_manager.GetBarSpot(ref bar_spot_number, this.gameObject);
 
-            //Need to return barposition AND bar spot number
-            transform.position = Vector2.MoveTowards(transform.position, barOrderPosition.position, moveSpeed * Time.deltaTime);
-            if (transform.position == barOrderPosition.position)
+            //If a valid position was returned
+            if (bar_spot_position != new Vector3(0, 0, 0))
+            {
+                waiting_for_barspot = false;
+                waiting_to_order = true;
+            }
+        }
+        else if (waiting_to_order)
+        {
+            transform.position = Vector2.MoveTowards(transform.position, bar_spot_position, moveSpeed * Time.deltaTime);
+            if (transform.position == bar_spot_position)
             {
                 ready_to_order = true;
-                readySprite.enabled = true;
+                ready_sprite.enabled = true;
+                waiting_to_order = false;
             }
         }
         else if (order_fullfilled)
         {
             //Move out of the screen
-            transform.position = Vector2.MoveTowards(transform.position, moveOutOfScreen.position, moveSpeed * Time.deltaTime);
+            transform.position = Vector2.MoveTowards(transform.position, pos_out_of_screen.position, moveSpeed * Time.deltaTime);
+            if (transform.position == pos_out_of_screen.position)
+            {
+                Destroy(gameObject);
+            }
         }
 
-        transform.position = new Vector3(transform.position.x, transform.position.y, transform.position.y);
     }
 
     void WaitForOrder()
     {
-        //Logic to wait to be clicked on
     }
 
     public void OrderFullfilled()
     {
         order_fullfilled = true;
-        readySprite.enabled = false;
-        drinkPanel.SetActive(false);
+        ready_sprite.enabled = false;
+        drink_order_panel.SetActive(false);
     }
 
     void OnMouseDown()
     {
         if (ready_to_order)
         {
-            drinkPanel.SetActive(true);
+            customer_manager.SetActiveCustomer(bar_spot_number);
+            drink_order_panel.SetActive(true);
         }
     }
 }
